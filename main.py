@@ -1,9 +1,13 @@
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 import datetime
 import collections
+import os
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 import pandas
+from dotenv import load_dotenv
+
+CREATION_DATE_OF_WINERY = 1920
 
 
 def get_years_sub_title(years: str) -> str:
@@ -11,13 +15,6 @@ def get_years_sub_title(years: str) -> str:
 
 
 def get_years_additional_word(years: str) -> str:
-    if years is not str:
-        try:
-            years = int(years)
-            years = str(years)
-        except Exception:
-            print('Года указаны некорректно')
-            return 'None'
     words_years_type = {
         'one': 'год',
         'some': 'года',
@@ -43,42 +40,47 @@ def get_years_additional_word(years: str) -> str:
     return words_years_type['many']
 
 
-def get_beverages():
-    try:
-        excel_data_df = pandas.read_excel(
-            'wine3.xlsx',
-            sheet_name='Лист1',
-            names=[
-                'category',
-                'title',
-                'variety',
-                'price',
-                'image',
-                'promotion'
-            ],
-            na_values='nan',
-            keep_default_na=False
-        ).to_dict(orient='records')
-    except (FileNotFoundError):
-        print('Файл wine3.xlsx не найден')
-        exit()
+def get_beverages(xsl_filepath_beverages):
+    excel_data_df = pandas.read_excel(
+        xsl_filepath_beverages,
+        sheet_name='Лист1',
+        names=[
+            'category',
+            'title',
+            'variety',
+            'price',
+            'image',
+            'promotion'
+        ],
+        na_values='nan',
+        keep_default_na=False
+    ).to_dict(orient='records')
     beverages = collections.defaultdict(list)
-    for item in excel_data_df:
-        beverages[item['category']].append(item)
+    for excel_row in excel_data_df:
+        beverages[excel_row['category']].append(excel_row)
     return beverages
 
 
 if __name__ == '__main__':
+    load_dotenv()
+    xsl_filepath_beverages = os.getenv(
+        'XSL_FILEPATH_BEVERAGES',
+        default='wine.xlsx'
+    )
     env = Environment(
         loader=FileSystemLoader('.'),
         autoescape=select_autoescape(['html', 'xml'])
     )
     template = env.get_template('template.html')
-    years_of_winery = datetime.datetime.now().year - 1920
-    rendered_page = template.render(
-        sub_title=get_years_sub_title(years_of_winery),
-        beverages=get_beverages()
-    )
+    winery_age = str(datetime.datetime.now().year - CREATION_DATE_OF_WINERY)
+    try:
+        rendered_page = template.render(
+            sub_title=get_years_sub_title(winery_age),
+            beverages=get_beverages(xsl_filepath_beverages)
+        )
+    except (FileNotFoundError):
+        print(f'Файл {xsl_filepath_beverages} не найден')
+        exit()
     with open('index.html', 'w', encoding="utf8") as file:
         file.write(rendered_page)
     server = HTTPServer(('0.0.0.0', 8000), SimpleHTTPRequestHandler)
