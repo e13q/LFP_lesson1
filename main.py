@@ -7,7 +7,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 import pandas
 from dotenv import load_dotenv
 
-CREATION_DATE_OF_WINERY = 1920
+WINERY_CREATION_YEAR = 1920
 
 
 def get_years_sub_title(years: str) -> str:
@@ -72,7 +72,7 @@ if __name__ == '__main__':
         autoescape=select_autoescape(['html', 'xml'])
     )
     template = env.get_template('template.html')
-    winery_age = str(datetime.datetime.now().year - CREATION_DATE_OF_WINERY)
+    winery_age = str(datetime.datetime.now().year - WINERY_CREATION_YEAR)
     try:
         rendered_page = template.render(
             sub_title=get_years_sub_title(winery_age),
