@@ -74,13 +74,14 @@ if __name__ == '__main__':
     template = env.get_template('template.html')
     winery_age = str(datetime.datetime.now().year - WINERY_CREATION_YEAR)
     try:
-        rendered_page = template.render(
-            sub_title=get_years_sub_title(winery_age),
-            beverages=get_beverages(xsl_filepath_beverages)
-        )
+        beverages = get_beverages(xsl_filepath_beverages)
     except (FileNotFoundError):
         print(f'Файл {xsl_filepath_beverages} не найден')
         exit()
+    rendered_page = template.render(
+        sub_title=get_years_sub_title(winery_age),
+        beverages=beverages
+    )
     with open('index.html', 'w', encoding="utf8") as file:
         file.write(rendered_page)
     server = HTTPServer(('0.0.0.0', 8000), SimpleHTTPRequestHandler)
